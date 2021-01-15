@@ -1,9 +1,10 @@
 CC := gcc
 LIBS := -lm
+COMPILEDIR := ./compile
 build:
-	rm -rf picgen
-	$(CC) -O2 -o picgen picgen.c $(LIBS)
+	rm -rf $(COMPILEDIR)/picgen
+	$(CC) -O2 -o $(COMPILEDIR)/picgen picgen.c $(LIBS)
 
 debug:
-	rm -rf picgen
-	$(CC) -g3 -DDEBUG -o picgen picgen.c $(LIBS)
+	rm -rf $(COMPILEDIR)/picgen
+	$(CC) -g3 -DDEBUG -o $(COMPILEDIR)/picgen picgen.c $(LIBS)

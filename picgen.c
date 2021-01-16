@@ -8,8 +8,8 @@
 #include<string.h>
 #include<stdbool.h>
 
-#define APPNAME "picgen "
-#define APPSPAC "       "
+#define APPNAME "picgen"
+#define APPSPAC "      "
 #define BITWIDTH_CHAR 8
 typedef unsigned long long ulonglong;
 enum{
@@ -75,12 +75,12 @@ int main(int argc,char *argv[]){
 		}
 	}
 	if(help_required){
-		printf(APPNAME"[options] input_filepath output_filepath                 \n");
-		printf(APPSPAC"options                                                  \n");
-		printf(APPSPAC"-h, --help                    :show this help and exit   \n");
-		printf(APPSPAC"-X, --X_ratio NUM             :x ratio of output image   \n");
-		printf(APPSPAC"-Y, --Y_ratio NUM             :y ratio of output image   \n");
-		printf(APPSPAC"-m, --mode (MONO|GRAY|COLOR)  :color mode of output image\n");
+		printf(APPNAME" [options] input_filepath output_filepath                 \n");
+		printf(APPSPAC" options                                                  \n");
+		printf(APPSPAC" -h, --help                    :show this help and exit   \n");
+		printf(APPSPAC" -X, --X_ratio NUM             :x ratio of output image   \n");
+		printf(APPSPAC" -Y, --Y_ratio NUM             :y ratio of output image   \n");
+		printf(APPSPAC" -m, --mode (MONO|GRAY|COLOR)  :color mode of output image\n");
 		exit(EXIT_SUCCESS);
 	}
 	if(optind > argc-2){
@@ -153,7 +153,10 @@ int main(int argc,char *argv[]){
 		for(x=0;x<X_num_pixels;x++){
 			switch(output_mode){
 				case MONO:
-					if((pixel=fgetc(infile))!=EOF){//かなりの手抜きだが、特に加工するつもりはないのでこれでいいだろう
+					if(x%8==0){
+						if((pixel=fgetc(infile))==EOF){
+							pixel=0;
+						}
 						fputc(pixel,outfile);
 					}
 					break;
@@ -172,15 +175,6 @@ int main(int argc,char *argv[]){
 					}
 					break;
 			}
-		}
-	}
-#ifdef DEBUG
-	printf("zero chars:%lf\n",((X_num_pixels*Y_num_pixels)/8.0-input_filesize+1));
-	printf("zero chars:%d\n",(int)((X_num_pixels*Y_num_pixels)/8.0-input_filesize+1));
-#endif
-	if(output_mode==MONO){//これまた手抜きだが、まあいいだろう
-		for(int j=0;j<(int)((X_num_pixels*Y_num_pixels)/8.0-input_filesize+1);j++){
-			fputc(0,outfile);
 		}
 	}
 	return 0;

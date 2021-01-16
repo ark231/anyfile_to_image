@@ -11,23 +11,30 @@
 #define APPNAME "picgen"
 #define APPSPAC "      "
 #define BITWIDTH_CHAR 8
+#define EXTENSION_MONO  "pbm"
+#define EXTENSION_GRAY  "pgm"
+#define EXTENSION_COLOR "ppm"
 typedef unsigned long long ulonglong;
-enum{
+typedef enum{
 	MONO,
 	GRAY,
 	COLOR
-};
+}color_mode;
+char* add_extension(const char*,color_mode);
 int main(int argc,char *argv[]){
 	FILE *infile = NULL,*outfile = NULL;
 	double X_ratio = 1.0;
 	double Y_ratio = 1.0;
-	char output_mode = COLOR;
+	color_mode output_mode = COLOR;
 	bool help_required = false;
+	bool no_extension = false;
+	char *extension;
 	struct option longopts[]={
-		{"X_ratio",required_argument,0,'X'},
-		{"Y_ratio",required_argument,0,'Y'},
-		{"mode"   ,required_argument,0,'m'},
-		{"help"   ,no_argument      ,0,'h'},//flagにはintが入れられて、_Boolとはなじまないので
+		{"X_ratio"     ,required_argument,0,'X'},
+		{"Y_ratio"     ,required_argument,0,'Y'},
+		{"mode"        ,required_argument,0,'m'},
+		{"help"        ,no_argument      ,0,'h'},//flagにはintが入れられて、_Boolとはなじまないので
+		{"no_extension",no_argument      ,0,'n'},//flagにはintが入れられて、_Boolとはなじまないので
 		{0        ,0                ,0, 0 },
 	};
 	int idx_lngopt=0;
@@ -69,6 +76,9 @@ int main(int argc,char *argv[]){
 			case 'h':
 				help_required = true;
 				break;
+			case 'n':
+				no_extension = true;
+				break;
 			case '?':
 				//printf("error\n");
 				break;
@@ -81,6 +91,7 @@ int main(int argc,char *argv[]){
 		printf(APPSPAC" -X, --X_ratio NUM             :x ratio of output image   \n");
 		printf(APPSPAC" -Y, --Y_ratio NUM             :y ratio of output image   \n");
 		printf(APPSPAC" -m, --mode (MONO|GRAY|COLOR)  :color mode of output image\n");
+		printf(APPSPAC" --no_extension                :do not add extension      \n");
 		exit(EXIT_SUCCESS);
 	}
 	if(optind > argc-2){
@@ -88,22 +99,31 @@ int main(int argc,char *argv[]){
 		exit(EXIT_FAILURE);
 	}
 
-	int index_arg_infilepath=optind;
 	if((infile=fopen(argv[optind],"r"))==NULL){
 		fprintf(stderr,"can't open input file\n");
 		exit(EXIT_FAILURE);
 	}
-	optind++;
-	if((outfile=fopen(argv[optind],"w"))==NULL){
-		fprintf(stderr,"can't open output file\n");
-		exit(EXIT_FAILURE);
-	}
 	struct stat input_status;
-	if((stat(argv[index_arg_infilepath],&input_status))!=0){
+	if((stat(argv[optind],&input_status))!=0){
 		fprintf(stderr,"can't get status of input file\n");
 		exit(EXIT_FAILURE);
 	}
 	ulonglong input_filesize = (ulonglong)input_status.st_size;
+	optind++;
+	char *outfilename;
+	if(no_extension){
+		outfilename=argv[optind];
+	}else{
+		outfilename=add_extension(argv[optind],output_mode);
+		if(outfilename==NULL){
+			fprintf(stderr,"failed to add extension to filename\n");//そのまま拡張子無しで続行という手もあるが、もし拡張子を期待していて、拡張子なしの大事なファイルがあったとしたら、よきせぬ上書きにつながるので避けるべきであろう。
+			exit(EXIT_FAILURE);
+		}
+	}
+	if((outfile=fopen(outfilename,"w"))==NULL){
+		fprintf(stderr,"can't open output file\n");
+		exit(EXIT_FAILURE);
+	}
 #ifdef DEBUG
 	printf("filesize: %llu bytes\n",input_filesize);
 #endif
@@ -178,4 +198,26 @@ int main(int argc,char *argv[]){
 		}
 	}
 	return 0;
+}
+
+char* add_extension(const char *filename,color_mode output_mode){
+	char *extension;
+	switch(output_mode){
+		case MONO:
+			extension=EXTENSION_MONO;
+			break;
+		case GRAY:
+			extension=EXTENSION_GRAY;
+			break;
+		case COLOR:
+			extension=EXTENSION_COLOR;
+			break;
+	}
+	size_t length_outfilename = strlen(filename)+strlen(".")+strlen(extension)+1;//\0の分
+	char *outfilename;
+	if((outfilename=(char*)calloc(length_outfilename,sizeof(char)))==NULL){
+		return NULL;
+	}
+	sprintf(outfilename,"%s.%s",filename,extension);
+	return outfilename;
 }

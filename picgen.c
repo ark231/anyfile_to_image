@@ -20,6 +20,14 @@ typedef enum{
 	GRAY,
 	COLOR
 }color_mode;
+
+typedef enum{
+	X_RATIO,
+	Y_RATIO,
+	MODE,
+	HELP,
+	NO_EXTENSION
+} type_argument;
 char* add_extension(const char*,color_mode);
 int main(int argc,char *argv[]){
 	FILE *infile = NULL,*outfile = NULL;
@@ -30,18 +38,19 @@ int main(int argc,char *argv[]){
 	bool no_extension = false;
 	char *extension;
 	struct option longopts[]={
-		{"X_ratio"     ,required_argument,0,'X'},
-		{"Y_ratio"     ,required_argument,0,'Y'},
-		{"mode"        ,required_argument,0,'m'},
-		{"help"        ,no_argument      ,0,'h'},//flagにはintが入れられて、_Boolとはなじまないので
-		{"no_extension",no_argument      ,0,'n'},//flagにはintが入れられて、_Boolとはなじまないので
-		{0        ,0                ,0, 0 },
+		{"X_ratio"     ,required_argument,0,X_RATIO     },
+		{"Y_ratio"     ,required_argument,0,Y_RATIO     },
+		{"mode"        ,required_argument,0,MODE        },
+		{"help"        ,no_argument      ,0,HELP        },//flagにはintが入れられて、_Boolとはなじまないので
+		{"no_extension",no_argument      ,0,NO_EXTENSION},//flagにはintが入れられて、_Boolとはなじまないので
+		{0             ,0                ,0,0           },
 	};
 	int idx_lngopt=0;
 	int val_opt=0;
 	while((val_opt=getopt_long(argc,argv,"X:Y:m:h",longopts,&idx_lngopt))!=-1){
 		char *err=NULL;
 		switch(val_opt){
+			case X_RATIO:
 			case 'X':
 				{
 				double X_ratio_tmp=(double)strtod(optarg,&err);
@@ -52,6 +61,7 @@ int main(int argc,char *argv[]){
 				}
 				break;
 				 }
+			case Y_RATIO:
 			case 'Y':
 				{
 				double Y_ratio_tmp=(double)strtod(optarg,&err);
@@ -62,6 +72,7 @@ int main(int argc,char *argv[]){
 				}
 				break;
 				}
+			case MODE:
 			case 'm':
 				if(strcmp(optarg,"mono")==0 || strcmp(optarg,"MONO")==0){
 					output_mode=MONO;
@@ -73,14 +84,17 @@ int main(int argc,char *argv[]){
 					fprintf(stderr,"error: invalid value %s\n",optarg);
 				}
 				break;
+			case HELP:
 			case 'h':
 				help_required = true;
 				break;
+			case NO_EXTENSION:
 			case 'n':
 				no_extension = true;
 				break;
 			case '?':
 				//printf("error\n");
+				exit(EXIT_FAILURE);
 				break;
 		}
 	}

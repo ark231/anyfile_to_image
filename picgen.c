@@ -24,15 +24,22 @@ typedef enum{
 typedef enum{
 	X_RATIO,
 	Y_RATIO,
+	X_ABSOLUTE,
+	Y_ABSOLUTE,
 	MODE,
 	HELP,
 	NO_EXTENSION
 } type_argument;
 char* add_extension(const char*,color_mode);
+void add_header(FILE* ,color_mode ,ulonglong ,ulonglong );
 int main(int argc,char *argv[]){
 	FILE *infile = NULL,*outfile = NULL;
 	double X_ratio = 1.0;
 	double Y_ratio = 1.0;
+	ulonglong X_num_pixels;
+	ulonglong Y_num_pixels;
+	bool X_absolutely = false;
+	bool Y_absolutely = false;
 	color_mode output_mode = COLOR;
 	bool help_required = false;
 	bool no_extension = false;
@@ -40,6 +47,8 @@ int main(int argc,char *argv[]){
 	struct option longopts[]={
 		{"X_ratio"     ,required_argument,0,X_RATIO     },
 		{"Y_ratio"     ,required_argument,0,Y_RATIO     },
+		{"X_absolute"  ,required_argument,0,X_ABSOLUTE  },
+		{"Y_absolute"  ,required_argument,0,Y_ABSOLUTE  },
 		{"mode"        ,required_argument,0,MODE        },
 		{"help"        ,no_argument      ,0,HELP        },//flagにはintが入れられて、_Boolとはなじまないので
 		{"no_extension",no_argument      ,0,NO_EXTENSION},//flagにはintが入れられて、_Boolとはなじまないので
@@ -47,12 +56,11 @@ int main(int argc,char *argv[]){
 	};
 	int idx_lngopt=0;
 	int val_opt=0;
-	while((val_opt=getopt_long(argc,argv,"X:Y:m:h",longopts,&idx_lngopt))!=-1){
+	while((val_opt=getopt_long(argc,argv,"X:Y:x:y:m:h",longopts,&idx_lngopt))!=-1){
 		char *err=NULL;
 		switch(val_opt){
 			case X_RATIO:
-			case 'X':
-				{
+			case 'X':;
 				double X_ratio_tmp=(double)strtod(optarg,&err);
 				if(*err != '\n' && *err != '\0'){
 					fprintf(stderr,"error: invalid value %s\n",optarg);
@@ -60,10 +68,8 @@ int main(int argc,char *argv[]){
 					X_ratio=X_ratio_tmp;
 				}
 				break;
-				 }
 			case Y_RATIO:
-			case 'Y':
-				{
+			case 'Y':;
 				double Y_ratio_tmp=(double)strtod(optarg,&err);
 				if(*err != '\n' && *err != '\0'){
 					fprintf(stderr,"error: invalid value %s\n",optarg);
@@ -71,7 +77,26 @@ int main(int argc,char *argv[]){
 					Y_ratio=Y_ratio_tmp;
 				}
 				break;
+			case X_ABSOLUTE:
+			case 'x':;
+				ulonglong X_num_pixels_tmp=(ulonglong)strtol(optarg,&err,0);
+				if(*err != '\n' && *err != '\0'){
+					fprintf(stderr,"error: invalid value %s\n",optarg);
+				}else{
+					X_num_pixels=X_num_pixels_tmp;
+					X_absolutely=true;
 				}
+				break;
+			case Y_ABSOLUTE:
+			case 'y':;
+				ulonglong Y_num_pixels_tmp=(ulonglong)strtol(optarg,&err,0);
+				if(*err != '\n' && *err != '\0'){
+					fprintf(stderr,"error: invalid value %s\n",optarg);
+				}else{
+					Y_num_pixels=Y_num_pixels_tmp;
+					Y_absolutely=true;
+				}
+				break;
 			case MODE:
 			case 'm':
 				if(strcmp(optarg,"mono")==0 || strcmp(optarg,"MONO")==0){
@@ -104,6 +129,8 @@ int main(int argc,char *argv[]){
 		printf(APPSPAC" -h, --help                    :show this help and exit   \n");
 		printf(APPSPAC" -X, --X_ratio NUM             :x ratio of output image   \n");
 		printf(APPSPAC" -Y, --Y_ratio NUM             :y ratio of output image   \n");
+		printf(APPSPAC" -x, --X_absolute NUM          :absolute x size (pixel)   \n");
+		printf(APPSPAC" -y, --Y_absolute NUM          :absolute y size (pixel)   \n");
 		printf(APPSPAC" -m, --mode (MONO|GRAY|COLOR)  :color mode of output image\n");
 		printf(APPSPAC" --no_extension                :do not add extension      \n");
 		exit(EXIT_SUCCESS);
@@ -141,41 +168,49 @@ int main(int argc,char *argv[]){
 #ifdef DEBUG
 	printf("filesize: %llu bytes\n",input_filesize);
 #endif
-	ulonglong X_num_pixels;
-	ulonglong Y_num_pixels;
+	ulonglong num_all_pixels;
 	switch(output_mode){
 		case MONO:
-			X_num_pixels = (ulonglong)sqrt((X_ratio*input_filesize*BITWIDTH_CHAR)/Y_ratio)+1;
-			X_num_pixels += (8-(X_num_pixels%8))%8;//pbmは幅を8の倍数にしなければならないので。
-			Y_num_pixels = (ulonglong)sqrt((Y_ratio*input_filesize*BITWIDTH_CHAR)/X_ratio)+1;
-			Y_num_pixels += (8-(Y_num_pixels%8))%8;//幅と揃えるため(特に正方形のとき)
-			fprintf(outfile,"P4\n");
-			fprintf(outfile,"%llu %llu\n",X_num_pixels,Y_num_pixels);
+			num_all_pixels=(ulonglong)(input_filesize*BITWIDTH_CHAR);
 #ifdef DEBUG
-	printf("mode: MONO\n");
+			printf("mode: MONO\n");
 #endif
 			break;
 		case GRAY:
-			X_num_pixels = (ulonglong)sqrt((X_ratio*input_filesize)/Y_ratio)+1;
-			Y_num_pixels = (ulonglong)sqrt((Y_ratio*input_filesize)/X_ratio)+1;
-			fprintf(outfile,"P5\n");
-			fprintf(outfile,"%llu %llu\n",X_num_pixels,Y_num_pixels);
-			fprintf(outfile,"255\n");
+			num_all_pixels=(ulonglong)(input_filesize);
 #ifdef DEBUG
-	printf("mode: GRAY\n");
+			printf("mode: GRAY\n");
 #endif
 			break;
 		case COLOR:
-			X_num_pixels = (ulonglong)sqrt((X_ratio*input_filesize/3.0)/Y_ratio)+1;
-			Y_num_pixels = (ulonglong)sqrt((Y_ratio*input_filesize/3.0)/X_ratio)+1;
-			fprintf(outfile,"P6\n");
-			fprintf(outfile,"%llu %llu\n",X_num_pixels,Y_num_pixels);
-			fprintf(outfile,"255\n");
+			num_all_pixels=(ulonglong)(input_filesize/3.0);
 #ifdef DEBUG
-	printf("mode: COLOR\n");
+			printf("mode: COLOR\n");
 #endif
 			break;
 	}
+#ifdef DEBUG
+	printf("num_all_pixels: %llu\n",num_all_pixels);
+#endif
+	if((X_absolutely || Y_absolutely) && !(X_absolutely && Y_absolutely)){
+		if(X_absolutely){
+			Y_num_pixels=(ulonglong)ceil((num_all_pixels/(double)X_num_pixels));
+		}else{
+			X_num_pixels=(ulonglong)ceil((num_all_pixels/(double)Y_num_pixels));
+		}
+		if(output_mode==MONO){
+			X_num_pixels += (8-(X_num_pixels%8))%8;//pbmは幅を8の倍数にしなければならないので。
+			Y_num_pixels += (8-(Y_num_pixels%8))%8;//幅と揃えるため(特に正方形のとき)
+		}
+	}else if(!(X_absolutely || Y_absolutely)){
+		X_num_pixels = (ulonglong)ceil(sqrt((X_ratio*num_all_pixels)/Y_ratio));
+		Y_num_pixels = (ulonglong)ceil(sqrt((Y_ratio*num_all_pixels)/X_ratio));
+		if(output_mode==MONO){
+			X_num_pixels += (8-(X_num_pixels%8))%8;//pbmは幅を8の倍数にしなければならないので。
+			Y_num_pixels += (8-(Y_num_pixels%8))%8;//幅と揃えるため(特に正方形のとき)
+		}
+	}
+	add_header(outfile,output_mode,X_num_pixels,Y_num_pixels);
 #ifdef DEBUG
 	printf("X_num_pixels: %llu\n",X_num_pixels);
 	printf("Y_num_pixels: %llu\n",Y_num_pixels);
@@ -234,4 +269,23 @@ char* add_extension(const char *filename,color_mode output_mode){
 	}
 	sprintf(outfilename,"%s.%s",filename,extension);
 	return outfilename;
+}
+
+void add_header(FILE* outfile,color_mode output_mode,ulonglong X_size,ulonglong Y_size){
+	switch(output_mode){
+		case MONO:
+			fprintf(outfile,"P4\n");
+			fprintf(outfile,"%lld %lld\n",X_size,Y_size);
+			break;
+		case GRAY:
+			fprintf(outfile,"P5\n");
+			fprintf(outfile,"%lld %lld\n",X_size,Y_size);
+			fprintf(outfile,"255\n");
+			break;
+		case COLOR:
+			fprintf(outfile,"P6\n");
+			fprintf(outfile,"%lld %lld\n",X_size,Y_size);
+			fprintf(outfile,"255\n");
+			break;
+	}
 }

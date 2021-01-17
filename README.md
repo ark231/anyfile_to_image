@@ -12,7 +12,7 @@ picgen [オプション] 入力ファイル名 出力ファイル名
 |-Y, --Y_ratio NUM             |出力画像の縦の比率|
 |-x, --X_absolute NUM          |出力画像の横の絶対サイズ|
 |-y, --Y_absolute NUM          |出力画像の縦の絶対サイズ|
-|-m, --mode (MONO|GRAY|COLOR)  |どの形式で出力するか（デフォルトはcolor）|
+|-m, --mode (MONO\|GRAY\|COLOR)  |どの形式で出力するか（デフォルトはcolor）|
 |--no_extension                |拡張子を付け足さない|
 ### 説明
 このプログラムは、入力ファイルをデータとするpnm画像を生成します。

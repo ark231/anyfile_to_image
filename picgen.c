@@ -132,9 +132,9 @@ int main(int argc,char *argv[]){
 	switch(output_mode){
 		case MONO:
 			X_num_pixels = (ulonglong)sqrt((X_ratio*input_filesize*BITWIDTH_CHAR)/Y_ratio)+1;
-			X_num_pixels += (8-(X_num_pixels%8));//pbmは幅を8の倍数にしなければならないので
+			X_num_pixels += (8-(X_num_pixels%8))%8;//pbmは幅を8の倍数にしなければならないので。
 			Y_num_pixels = (ulonglong)sqrt((Y_ratio*input_filesize*BITWIDTH_CHAR)/X_ratio)+1;
-			Y_num_pixels += (8-(Y_num_pixels%8));//幅と揃えるため(特に正方形のとき)
+			Y_num_pixels += (8-(Y_num_pixels%8))%8;//幅と揃えるため(特に正方形のとき)
 			fprintf(outfile,"P4\n");
 			fprintf(outfile,"%llu %llu\n",X_num_pixels,Y_num_pixels);
 #ifdef DEBUG
